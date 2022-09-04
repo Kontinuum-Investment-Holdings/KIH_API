@@ -10,7 +10,8 @@ import ibapi.contract
 import ibapi.order
 import ibapi.order_state
 
-from kih_api import global_common
+import kih_api
+from kih_api import global_common, communication
 from kih_api.ibkr import constants, IBKR_API
 from kih_api.ibkr.exceptions import MarketDataNotAvailableException
 from kih_api.ibkr.helper import IBKR_Helper

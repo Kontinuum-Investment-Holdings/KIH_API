@@ -7,7 +7,8 @@ from typing import List
 
 import pytz
 
-from kih_api import global_common
+import kih_api
+from kih_api import global_common, communication
 from kih_api.ibkr_web_api import ibkr_models
 from kih_api.ibkr_web_api.exceptions import StockNotFoundException, StockDataNotAvailableException
 from kih_api.ibkr_web_api.ibkr_models import StockSearchResults, Contract, MarketDataSnapshot, PortfolioPositions, PortfolioAccounts, \

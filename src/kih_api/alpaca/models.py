@@ -9,7 +9,8 @@ import alpaca_trade_api.entity
 import dateutil.parser
 from alpaca_trade_api.rest import APIError
 
-from kih_api import global_common
+import kih_api
+from kih_api import global_common, communication
 from kih_api.alpaca import alpaca_api
 
 

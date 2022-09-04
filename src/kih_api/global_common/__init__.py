@@ -9,6 +9,8 @@ from typing import Any, Dict, Type, Optional, List, Union, Callable
 
 from dataclass_csv import DataclassWriter
 
+import kih_api
+from kih_api import communication
 from kih_api.logger import logger
 
 

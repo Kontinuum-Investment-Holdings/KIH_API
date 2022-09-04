@@ -1,6 +1,7 @@
 from typing import Callable, Any
 
-from kih_api import global_common
+import kih_api
+from kih_api import global_common, communication
 from kih_api.ibkr.models import IBKR
 
 

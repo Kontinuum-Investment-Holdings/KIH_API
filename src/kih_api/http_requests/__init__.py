@@ -6,6 +6,7 @@ import urllib3
 from requests import Response
 
 from kih_api.global_common import CustomException
+from kih_api.http_requests import constants
 from kih_api.http_requests.models import MethodType
 from kih_api.logger import logger
 

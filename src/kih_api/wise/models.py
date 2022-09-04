@@ -5,7 +5,8 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import List, Optional, Union
 
-from kih_api import global_common
+import kih_api
+from kih_api import global_common, communication
 from kih_api.finance_database.exceptions import InsufficientFundsException, AccountForCurrencyNotFoundException
 from kih_api.http_requests import ClientErrorException
 from kih_api.logger import logger
