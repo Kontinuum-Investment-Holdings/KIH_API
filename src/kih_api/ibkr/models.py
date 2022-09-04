@@ -12,6 +12,7 @@ import ibapi.order_state
 
 import kih_api
 from kih_api import global_common, communication
+from kih_api.communication import telegram
 from kih_api.ibkr import constants, IBKR_API
 from kih_api.ibkr.exceptions import MarketDataNotAvailableException
 from kih_api.ibkr.helper import IBKR_Helper
@@ -146,7 +147,7 @@ class IBKR:
 
     @staticmethod
     def place_order(symbol: str, quantity: Decimal, limit_price: Decimal, order_action: OrderAction, order_type: OrderType, security_type: SecurityType) -> "Order":
-        communication.telegram.send_message(kih_api.communication.telegram.constants.telegram_channel_username,
+        telegram.send_message(telegram.constants.telegram_channel_username,
                                             f"<u><b>Placing a new order</b></u>\n\nSymbol: <i>{symbol}</i>"
                                             f"\nOrder Type: <i>{order_type.value}</i>"
                                             f"\nOrder Action: <i>{order_action.value}</i>"
@@ -171,7 +172,7 @@ class IBKR:
         orders_list: List["Order"] = []
         for position in positions_list:
             if position.quantity > 0:
-                communication.telegram.send_message(kih_api.communication.telegram.constants.telegram_channel_username,
+                telegram.send_message(telegram.constants.telegram_channel_username,
                                                     f"<u><b>Closing all positions</b></u>"
                                                     f"\n\nSymbol: <i>{position.symbol}</i>"
                                                     f"\nQuantity: <i>{str(position.quantity)}</i>", True)
@@ -213,7 +214,7 @@ class IBKR:
 
     @staticmethod
     def cancel_all_orders() -> None:
-        communication.telegram.send_message(kih_api.communication.telegram.constants.telegram_channel_username, "<u><b>Cancelling all orders</b></u>", True)
+        telegram.send_message(telegram.constants.telegram_channel_username, "<u><b>Cancelling all orders</b></u>", True)
 
         ibkr_api: IBKR_API = IBKR_Helper.get_IBKR_connection()
         ibkr_api.reqGlobalCancel()

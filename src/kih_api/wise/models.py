@@ -7,6 +7,7 @@ from typing import List, Optional, Union
 
 import kih_api
 from kih_api import global_common, communication
+from kih_api.communication import telegram
 from kih_api.finance_database.exceptions import InsufficientFundsException, AccountForCurrencyNotFoundException
 from kih_api.http_requests import ClientErrorException
 from kih_api.logger import logger
@@ -266,7 +267,7 @@ class Transfer:
             transfer: Transfer = Transfer(user_profile, recipient, wise_transfer, wise_fund)
 
             if transfer.is_successful:
-                communication.telegram.send_message(kih_api.communication.telegram.constants.telegram_channel_username,
+                telegram.send_message(telegram.constants.telegram_channel_username,
                                                     f"<u><b>Money transferred</b></u>"
                                                     f"\n\nAmount: <i>{to_currency.value} {global_common.get_formatted_string_from_decimal(receiving_amount)}</i>"
                                                     f"\nTo: <i>{recipient.name}</i>"
@@ -278,7 +279,7 @@ class Transfer:
 
         except ClientErrorException as e:
             logger.error(str(e))
-            communication.telegram.send_message(kih_api.communication.telegram.constants.telegram_channel_username,
+            telegram.send_message(telegram.constants.telegram_channel_username,
                                                 f"<u><b>ERROR: Money transfer failed</b></u>"
                                                 f"\n\nAmount: <i>{to_currency.value} {global_common.get_formatted_string_from_decimal(receiving_amount)}</i>"
                                                 f"\nTo: <i>{recipient.name}</i>"
@@ -286,7 +287,7 @@ class Transfer:
                                                 f"\nReference: <i>{reference}</i>", True)
         except InsufficientFundsException as e:
             logger.error(str(e))
-            communication.telegram.send_message(kih_api.communication.telegram.constants.telegram_channel_username,
+            telegram.send_message(telegram.constants.telegram_channel_username,
                                                 f"<u><b>ERROR: Money transfer failed</b></u>"
                                                 f"\n\nAmount: <i>{to_currency.value} {global_common.get_formatted_string_from_decimal(receiving_amount)}</i>"
                                                 f"\nTo: <i>{recipient.name}</i>"
@@ -318,12 +319,9 @@ class IntraAccountTransfer:
         self.exchange_rate = ExchangeRate(Decimal(str(intra_account_transfer.rate)), self.from_currency, self.to_currency)
         self.is_successful = intra_account_transfer.state == "COMPLETED"
 
-    # TODO: Implement withdrawal from reserve accounts
     @classmethod
     def execute(cls, receiving_amount: Decimal, from_account: Union[CashAccount, ReserveAccount], to_account: Union[CashAccount, ReserveAccount], profile_type: ProfileTypes) -> "IntraAccountTransfer":
         user_profile: UserProfile = UserProfile.get_by_profile_type(profile_type)
-        intra_account_transfer: IntraAccountTransfer = None
-        wise_intra_account_transfer: wise_models.IntraAccountTransfer = None
 
         try:
             if isinstance(to_account, CashAccount):
@@ -336,17 +334,17 @@ class IntraAccountTransfer:
                 intra_account_transfer = IntraAccountTransfer(from_account, to_account, wise_intra_account_transfer)
 
                 if intra_account_transfer.is_successful:
-                    communication.telegram.send_message(
-                        kih_api.communication.telegram.constants.telegram_channel_username,
+                    telegram.send_message(
+                        telegram.constants.telegram_channel_username,
                                                         f"<u><b>Intra account money transferred</b></u>"
                                                         f"\n\nAmount: <i>{to_account.currency.value} {global_common.get_formatted_string_from_decimal(receiving_amount)}</i>"
                                                         f"\nFrom: <i>{from_account.name if isinstance(from_account, ReserveAccount) else to_account.currency.value}</i>"
-                                                        f"\nTo: <i>{to_account.name if isinstance(to_account, ReserveAccount) else ''} ({to_account.currency.value})</i>", True)
+                                                        f"\nTo: <i>{to_account.name if isinstance(to_account, ReserveAccount) else to_account.currency.value}</i>", True)
 
             elif isinstance(to_account, ReserveAccount):
                 if from_account.currency != to_account.currency:
                     to_cash_account: CashAccount = CashAccount.get_by_profile_type_and_currency(profile_type, to_account.currency)
-                    IntraAccountTransfer.execute(receiving_amount, from_account.currency, to_cash_account, profile_type)
+                    IntraAccountTransfer.execute(receiving_amount, from_account, to_cash_account, profile_type)
                     from_account = to_cash_account
 
                 if from_account.balance < receiving_amount:
@@ -359,8 +357,8 @@ class IntraAccountTransfer:
                 intra_account_transfer = IntraAccountTransfer(from_account, to_account, wise_intra_account_transfer)
 
                 if intra_account_transfer.is_successful:
-                    communication.telegram.send_message(
-                        kih_api.communication.telegram.constants.telegram_channel_username,
+                    telegram.send_message(
+                        telegram.constants.telegram_channel_username,
                                                         f"<u><b>Intra account money transferred</b></u>"
                                                         f"\n\nAmount: <i>{to_account.currency.value} {global_common.get_formatted_string_from_decimal(receiving_amount)}</i>"
                                                         f"\nFrom: <i>{to_account.currency.value}</i>"
@@ -369,7 +367,7 @@ class IntraAccountTransfer:
 
         except ClientErrorException as e:
             logger.error(str(e))
-            communication.telegram.send_message(kih_api.communication.telegram.constants.telegram_channel_username,
+            telegram.send_message(telegram.constants.telegram_channel_username,
                                                 f"<u><b>ERROR: Intra account money transfer failed</b></u>"
                                                 f"\n\nAmount: <i>{to_account.currency.value} {global_common.get_formatted_string_from_decimal(receiving_amount)}</i>"
                                                 f"\nFrom: <i>{to_account.currency.value}</i>"
@@ -377,7 +375,7 @@ class IntraAccountTransfer:
                                                 f"\nReason: <i>{str(e)}</i>", True)
         except InsufficientFundsException as e:
             logger.error(str(e))
-            communication.telegram.send_message(kih_api.communication.telegram.constants.telegram_channel_username,
+            telegram.send_message(telegram.constants.telegram_channel_username,
                                                 f"<u><b>ERROR: Intra account money transfer failed</b></u>"
                                                 f"\n\nAmount: <i>{to_account.currency.value} {global_common.get_formatted_string_from_decimal(receiving_amount)}</i>"
                                                 f"\nFrom: <i>{to_account.currency.value}</i>"

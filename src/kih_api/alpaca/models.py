@@ -12,6 +12,7 @@ from alpaca_trade_api.rest import APIError
 import kih_api
 from kih_api import global_common, communication
 from kih_api.alpaca import alpaca_api
+from kih_api.communication import telegram
 
 
 class AccountStatus(enum.Enum):
@@ -150,7 +151,7 @@ class Position:
         else:
             quantity = Decimal("0")
 
-        communication.telegram.send_message(kih_api.communication.telegram.constants.telegram_channel_username,
+        telegram.send_message(telegram.constants.telegram_channel_username,
                                             f"<u><b>Closing whole position</b></u>"
                                             f"\n\nSymbol: <i>{symbol}</i>"
                                             f"\nQuantity: <i>{str(quantity)}</i>", True)
@@ -175,7 +176,7 @@ class Position:
 
     @staticmethod
     def close_all() -> List["Position"]:
-        communication.telegram.send_message(kih_api.communication.telegram.constants.telegram_channel_username,
+        telegram.send_message(telegram.constants.telegram_channel_username,
                                             f"<u><b>Closing every single position</b></u>", True)
 
         alpaca_positions: List[alpaca_trade_api.entity.Position] = alpaca_api.close_all_positions()
@@ -251,7 +252,7 @@ class Order:
         else:
             float_limit_price = float(limit_price)
 
-        communication.telegram.send_message(kih_api.communication.telegram.constants.telegram_channel_username,
+        telegram.send_message(telegram.constants.telegram_channel_username,
                                             f"<u><b>Placing a new order</b></u>"
                                             f"\n\nSymbol: <i>{symbol}</i>"
                                             f"\nOrder Type: <i>{order_type.value}</i>"
@@ -281,7 +282,7 @@ class Order:
             if order.filled_qty > 0:
                 message = message + f"\nFilled Average Price: <i>${global_common.get_formatted_string_from_decimal(order.filled_avg_price)}</i>"
 
-            communication.telegram.send_message(kih_api.communication.telegram.constants.telegram_channel_username, message, True)
+            telegram.send_message(telegram.constants.telegram_channel_username, message, True)
 
         return order
 
@@ -300,7 +301,7 @@ class Order:
 
     @staticmethod
     def cancel_by_custom_order_id(custom_order_id: str) -> None:
-        communication.telegram.send_message(kih_api.communication.telegram.constants.telegram_channel_username,
+        telegram.send_message(telegram.constants.telegram_channel_username,
                                             f"<u><b>Cancelling Order</b></u>"
                                             f"\n\nCustom Order ID: <i>{custom_order_id}</i>", True)
 
@@ -308,7 +309,7 @@ class Order:
 
     @staticmethod
     def cancel_all() -> None:
-        communication.telegram.send_message(kih_api.communication.telegram.constants.telegram_channel_username,
+        telegram.send_message(telegram.constants.telegram_channel_username,
                                             f"<u><b>Cancelling all orders</b></u>", True)
 
         alpaca_api.cancel_all_orders()

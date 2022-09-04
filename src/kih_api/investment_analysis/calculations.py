@@ -34,7 +34,7 @@ def get_year_frac_from_number_of_days(number_of_days: Decimal, year: int) -> Dec
     return number_of_days / day_count_basis
 
 
-def add_years_to_date(date: datetime.datetime, number_of_years: Decimal) -> datetime:
+def add_years_to_date(date: datetime.datetime, number_of_years: Decimal) -> datetime.datetime:
     number_of_whole_years: Decimal = Decimal(int(number_of_years))
     number_of_fractional_years: Decimal = number_of_years - number_of_whole_years
 

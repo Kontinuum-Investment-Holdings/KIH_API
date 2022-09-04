@@ -7,13 +7,13 @@ from typing import Tuple
 from kih_api.ibkr.models import HistoricalData
 
 if typing.TYPE_CHECKING:
-    from kih_api.investment_analysis.custom_leveraged_trading.models import HistoricalData, HistoricalReturn
+    from kih_api.investment_analysis.custom_leveraged_trading.models import HistoricalReturn
 
 
 class InvestmentAnalysisHelper:
 
     @staticmethod
-    def get_leveraged_historical_data_list(starting_balance: Decimal, leverage: Decimal, historical_data_list: List["HistoricalData"]) -> List["HistoricalReturn"]:
+    def get_leveraged_historical_data_list(starting_balance: Decimal, leverage: Decimal, historical_data_list: List[HistoricalData]) -> List[HistoricalReturn]:
         from kih_api.investment_analysis.custom_leveraged_trading.models import HistoricalReturn
         historical_returns_list: List[HistoricalReturn] = []
 

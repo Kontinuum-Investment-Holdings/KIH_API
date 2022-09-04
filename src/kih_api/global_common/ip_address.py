@@ -4,6 +4,7 @@ from typing import Optional
 from requests import Response
 
 import kih_api.http_requests.common
+from kih_api import http_requests
 from kih_api.global_common import constants
 from kih_api.http_requests.models import ResponseObject
 

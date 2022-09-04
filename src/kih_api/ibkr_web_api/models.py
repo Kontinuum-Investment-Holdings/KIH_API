@@ -9,6 +9,7 @@ import pytz
 
 import kih_api
 from kih_api import global_common, communication
+from kih_api.communication import telegram
 from kih_api.ibkr_web_api import ibkr_models
 from kih_api.ibkr_web_api.exceptions import StockNotFoundException, StockDataNotAvailableException
 from kih_api.ibkr_web_api.ibkr_models import StockSearchResults, Contract, MarketDataSnapshot, PortfolioPositions, PortfolioAccounts, \
@@ -311,7 +312,7 @@ class PlaceOrder:
         self.custom_order_id = str(uuid.uuid4())
 
     def execute(self) -> "PlaceOrderResponse":
-        communication.telegram.send_message(kih_api.communication.telegram.constants.telegram_channel_username,
+        telegram.send_message(telegram.constants.telegram_channel_username,
                                             f"<u><b>Placing a new order</b></u>\n\nSymbol: <i>{self.symbol}</i>"
                                             f"\nOrder Type: <i>{self.orderType.value}</i>"
                                             f"\nOrder Side: <i>{self.side.value}</i>"
@@ -332,7 +333,7 @@ class PlaceOrder:
                                                                                             price))
 
         if order_response.is_order_filled:
-            communication.telegram.send_message(kih_api.communication.telegram.constants.telegram_channel_username,
+            telegram.send_message(telegram.constants.telegram_channel_username,
                                                 f"<u><b>Order has been placed and filled</b></u>"
                                                 f"\n\nSymbol: <i>{self.symbol}</i>"
                                                 f"\nOrder Type: <i>{self.orderType.value}</i>"
@@ -340,7 +341,7 @@ class PlaceOrder:
                                                 f"\nPrice: <i>{str(price)}</i>"
                                                 f"\nAccount ID: <i>{self.account_id}</i>", True)
         elif order_response.is_order_placed:
-            communication.telegram.send_message(kih_api.communication.telegram.constants.telegram_channel_username,
+            telegram.send_message(telegram.constants.telegram_channel_username,
                                                 f"<u><b>Order has been placed (but not filled)</b></u>"
                                                 f"\n\nSymbol: <i>{self.symbol}</i>"
                                                 f"\nOrder Type: <i>{self.orderType.value}</i>"
@@ -348,7 +349,7 @@ class PlaceOrder:
                                                 f"\nPrice: <i>{str(price)}</i>"
                                                 f"\nAccount ID: <i>{self.account_id}</i>", True)
         else:
-            communication.telegram.send_message(kih_api.communication.telegram.constants.telegram_channel_username,
+            telegram.send_message(telegram.constants.telegram_channel_username,
                                                 f"<u><b>ERROR: Order has not been placed</b></u>"
                                                 f"\n\nSymbol: <i>{self.symbol}</i>"
                                                 f"\nOrder Type: <i>{self.orderType.value}</i>"
@@ -373,7 +374,7 @@ class CancelOrder:
         self.order_id = self.unfilled_order.order_id
 
     def execute(self) -> "CancelOrderResponse":
-        communication.telegram.send_message(kih_api.communication.telegram.constants.telegram_channel_username,
+        telegram.send_message(telegram.constants.telegram_channel_username,
                                             f"<u><b>Cancelling an unfilled order</b></u>"
                                             f"\n\nSymbol: <i>{self.unfilled_order.symbol}</i>\n"
                                             f"\nUnfilled Quantity: <i>{str(self.unfilled_order.unfilled_quantity)}</i>"
@@ -385,7 +386,7 @@ class CancelOrder:
             kih_api.ibkr_web_api.ibkr_models.CancelOrder.call(self.account_id, self.order_id))
 
         if not cancel_order_response.is_order_cancelled:
-            communication.telegram.send_message(kih_api.communication.telegram.constants.telegram_channel_username,
+            telegram.send_message(telegram.constants.telegram_channel_username,
                                                 f"<u><b>ERROR: Order has not been cancelled</b></u>"
                                                 f"\n\nSymbol: <i>{self.unfilled_order.symbol}</i>\n"
                                                 f"\nUnfilled Quantity: <i>{str(self.unfilled_order.unfilled_quantity)}</i>"
@@ -579,7 +580,7 @@ class PortfolioPosition:
         place_order_response_list: List[PlaceOrderResponse] = []
         is_all_orders_placed: bool = True
 
-        communication.telegram.send_message(kih_api.communication.telegram.constants.telegram_channel_username,
+        telegram.send_message(telegram.constants.telegram_channel_username,
                                             f"<u><b>Closing all positions</b></u>"
                                             f"\n\nAccount ID: <i>{account_id}</i>\n", True)
 
@@ -595,11 +596,11 @@ class PortfolioPosition:
                 is_all_orders_placed = False
 
         if not is_all_orders_placed:
-            communication.telegram.send_message(kih_api.communication.telegram.constants.telegram_channel_username,
+            telegram.send_message(telegram.constants.telegram_channel_username,
                                                 f"<u><b>ERROR: All positions failed to close</b></u>"
                                                 f"\n\nAccount ID: <i>{account_id}</i>\n", True)
         else:
-            communication.telegram.send_message(kih_api.communication.telegram.constants.telegram_channel_username,
+            telegram.send_message(telegram.constants.telegram_channel_username,
                                                 f"<i>Orders placed to close all positions</i>"
                                                 f"\nAccount ID: <i>{account_id}</i>\n", True)
 

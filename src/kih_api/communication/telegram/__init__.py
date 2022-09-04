@@ -1,5 +1,4 @@
-import kih_api.communication.telegram.constants as constants
-from kih_api import http_requests
+from kih_api.communication.telegram import constants
 from kih_api.logger import logger
 
 url = constants.telegram_url.replace("<token>", constants.telegram_bot_token) + constants.telegram_method_send_message
@@ -14,6 +13,7 @@ def send_message(username: str, message_text: str, is_html: bool = False) -> Non
         parameters.update({"parse_mode": "HTML"})
 
     global url
+    from kih_api import http_requests
     response = http_requests.post(url, parameters)
 
     if response.status_code >= 300:

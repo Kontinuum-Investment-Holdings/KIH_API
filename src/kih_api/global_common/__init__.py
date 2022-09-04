@@ -9,8 +9,7 @@ from typing import Any, Dict, Type, Optional, List, Union, Callable
 
 from dataclass_csv import DataclassWriter
 
-import kih_api
-from kih_api import communication
+from kih_api.communication import telegram
 from kih_api.logger import logger
 
 
@@ -119,20 +118,20 @@ def job(job_name: str) -> Callable:
     def decorator(func: Callable) -> Callable:
         def wrapper(*args: Any, **kwargs: Any) -> None:
             try:
-                communication.telegram.send_message(
-                    kih_api.communication.telegram.constants.telegram_channel_development_username,
+                telegram.send_message(
+                    telegram.constants.telegram_channel_development_username,
                     f"Running job: <i>{job_name}</i>", True)
                 logger.debug(f"Running job: {job_name}")
                 func(*args, **kwargs)
                 logger.debug(f"Job ended: {job_name}")
-                communication.telegram.send_message(
-                    kih_api.communication.telegram.constants.telegram_channel_development_username,
+                telegram.send_message(
+                    telegram.constants.telegram_channel_development_username,
                     f"Job ended: <i>{job_name}</i>", True)
             except Exception as e:
                 message = f"<b><u>ERROR</u></b>\n\nJob Name: <i>{job_name}</i>\nError Type: <i>{type(e).__name__}</i>"
                 if str(e) != "":
                     message = message + f"\nError Message: <i>{str(e).replace('<', '').replace('>', '')}</i>"
-                communication.telegram.send_message(kih_api.communication.telegram.constants.telegram_channel_username, message,
+                telegram.send_message(telegram.constants.telegram_channel_username, message,
                                                     True)
                 raise Exception(e)
 
