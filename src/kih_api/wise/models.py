@@ -320,29 +320,40 @@ class IntraAccountTransfer:
 
     # TODO: Implement withdrawal from reserve accounts
     @classmethod
-    def execute(cls, receiving_amount: Decimal, from_currency: global_common.Currency, to_account: Union[CashAccount, ReserveAccount], profile_type: ProfileTypes) -> "IntraAccountTransfer":
+    def execute(cls, receiving_amount: Decimal, from_account: Union[CashAccount, ReserveAccount], to_account: Union[CashAccount, ReserveAccount], profile_type: ProfileTypes) -> "IntraAccountTransfer":
         user_profile: UserProfile = UserProfile.get_by_profile_type(profile_type)
-        from_account: CashAccount = CashAccount.get_by_profile_type_and_currency(profile_type, from_currency)
         intra_account_transfer: IntraAccountTransfer = None
         wise_intra_account_transfer: wise_models.IntraAccountTransfer = None
 
         try:
             if isinstance(to_account, CashAccount):
-                wise_quote: wise_models.Quote = wise_models.Quote.call(user_profile.id, from_currency.value, to_account.currency.value, float(receiving_amount))
-                wise_intra_account_transfer = wise_models.IntraAccountTransfer.call(user_profile.id, from_account.id, to_account.id, float(receiving_amount), wise_quote.id, None)
+                if isinstance(from_account, ReserveAccount):
+                    wise_intra_account_transfer = wise_models.IntraAccountTransfer.call(user_profile.id, from_account.id, to_account.id, float(receiving_amount), None, to_account.currency.value)
+                else:
+                    wise_quote: wise_models.Quote = wise_models.Quote.call(user_profile.id, from_account.currency.value, to_account.currency.value, float(receiving_amount))
+                    wise_intra_account_transfer = wise_models.IntraAccountTransfer.call(user_profile.id, from_account.id, to_account.id, float(receiving_amount), wise_quote.id if isinstance(from_account, CashAccount) else None, None)
+
                 intra_account_transfer = IntraAccountTransfer(from_account, to_account, wise_intra_account_transfer)
 
+                if intra_account_transfer.is_successful:
+                    communication.telegram.send_message(
+                        kih_api.communication.telegram.constants.telegram_channel_username,
+                                                        f"<u><b>Intra account money transferred</b></u>"
+                                                        f"\n\nAmount: <i>{to_account.currency.value} {global_common.get_formatted_string_from_decimal(receiving_amount)}</i>"
+                                                        f"\nFrom: <i>{from_account.name if isinstance(from_account, ReserveAccount) else to_account.currency.value}</i>"
+                                                        f"\nTo: <i>{to_account.name if isinstance(to_account, ReserveAccount) else ''} ({to_account.currency.value})</i>", True)
+
             elif isinstance(to_account, ReserveAccount):
-                if from_currency != to_account.currency:
+                if from_account.currency != to_account.currency:
                     to_cash_account: CashAccount = CashAccount.get_by_profile_type_and_currency(profile_type, to_account.currency)
-                    IntraAccountTransfer.execute(receiving_amount, from_currency, to_cash_account, profile_type)
+                    IntraAccountTransfer.execute(receiving_amount, from_account.currency, to_cash_account, profile_type)
                     from_account = to_cash_account
 
                 if from_account.balance < receiving_amount:
                     raise InsufficientFundsException(f"Insufficient funds"
-                                                     f"\nRequired amount: {from_currency.value} {global_common.get_formatted_string_from_decimal(receiving_amount)}"
-                                                     f"\nAccount Balance: {from_currency.value} {global_common.get_formatted_string_from_decimal(from_account.balance)}"
-                                                     f"\nShort of: {from_currency.value} {global_common.get_formatted_string_from_decimal(receiving_amount - from_account.balance)}")
+                                                     f"\nRequired amount: {from_account.currency.value} {global_common.get_formatted_string_from_decimal(receiving_amount)}"
+                                                     f"\nAccount Balance: {from_account.currency.value} {global_common.get_formatted_string_from_decimal(from_account.balance)}"
+                                                     f"\nShort of: {from_account.currency.value} {global_common.get_formatted_string_from_decimal(receiving_amount - from_account.balance)}")
 
                 wise_intra_account_transfer = wise_models.IntraAccountTransfer.call(user_profile.id, from_account.id, to_account.id, float(receiving_amount), None, to_account.currency.value)
                 intra_account_transfer = IntraAccountTransfer(from_account, to_account, wise_intra_account_transfer)
