@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='kih_api',
-    version='0.9.5',
+    version='0.9.8',
     url='https://github.com/Kontinuum-Investment-Holdings/KIH_API',
     author='Kavindu Athaudha',
     author_email='kavindu@k-ih.co.uk',
@@ -20,6 +20,7 @@ setup(
         "dacite",
         "mongoengine",
         "pymongo",
-        "dataclass_csv"
+        "dataclass_csv",
+        "openpyxl"
     ]
 )

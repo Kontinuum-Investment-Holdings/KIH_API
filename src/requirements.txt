@@ -10,3 +10,4 @@ dacite
 mongoengine
 pymongo
 dataclass_csv
+openpyxl
