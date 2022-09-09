@@ -9,7 +9,6 @@ from typing import Any, Dict, Type, Optional, List, Union, Callable
 
 from dataclass_csv import DataclassWriter
 
-from kih_api.communication import telegram
 from kih_api.logger import logger
 
 
@@ -22,6 +21,10 @@ class Currency(enum.Enum):
     SGD: str = "SGD"
     LKR: str = "LKR"
 
+class Environment(enum.Enum):
+    PROD: str = "Production"
+    DEV: str = "Development"
+
 
 class CustomException(Exception):
     pass
@@ -30,6 +33,22 @@ class CustomException(Exception):
 class EnumNotFoundException(CustomException):
     pass
 
+
+def get_environment() -> Environment:
+    try:
+        if get_environment_variable("ENV") == Environment.PROD:
+            return Environment.PROD
+        else:
+            return Environment.DEV
+    except CustomException:
+        return Environment.DEV
+
+def get_environment_variable(key: str) -> str:
+    value: str = os.getenv(key)
+    if value is not None:
+        return value
+    else:
+        raise CustomException(f"Environment variable not setup: {key}")
 
 def convert_string_to_dict(string: str) -> Dict[Any, Any]:
     parameters_list = string.split(",")
@@ -117,15 +136,16 @@ def update_code_base(project_directory: str, main_branch_name: str = "main") -> 
 def job(job_name: str) -> Callable:
     def decorator(func: Callable) -> Callable:
         def wrapper(*args: Any, **kwargs: Any) -> None:
+            from kih_api.communication import telegram
             try:
                 telegram.send_message(
-                    telegram.constants.telegram_channel_development_username,
+                    telegram.constants.telegram_channel_username,
                     f"Running job: <i>{job_name}</i>", True)
                 logger.debug(f"Running job: {job_name}")
                 func(*args, **kwargs)
                 logger.debug(f"Job ended: {job_name}")
                 telegram.send_message(
-                    telegram.constants.telegram_channel_development_username,
+                    telegram.constants.telegram_channel_username,
                     f"Job ended: <i>{job_name}</i>", True)
             except Exception as e:
                 message = f"<b><u>ERROR</u></b>\n\nJob Name: <i>{job_name}</i>\nError Type: <i>{type(e).__name__}</i>"

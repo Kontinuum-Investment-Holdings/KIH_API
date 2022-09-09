@@ -14,7 +14,7 @@ def job(job_name: str, is_run_only_when_market_is_open: bool = False, symbol_to_
                 func(*args, **kwargs)
             else:
                 telegram.send_message(
-                    telegram.constants.telegram_channel_development_username, f"Market is not open; job skipped: <i>{job_name}</i>", True)
+                    telegram.constants.telegram_channel_username, f"Market is not open; job skipped: <i>{job_name}</i>", True)
 
         return wrapper
 
