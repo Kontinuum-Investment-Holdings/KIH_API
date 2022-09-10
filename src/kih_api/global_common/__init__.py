@@ -20,6 +20,7 @@ class Currency(enum.Enum):
     NZD: str = "NZD"
     SGD: str = "SGD"
     LKR: str = "LKR"
+    IDR: str = "IDR"
 
 class Environment(enum.Enum):
     PROD: str = "Production"
