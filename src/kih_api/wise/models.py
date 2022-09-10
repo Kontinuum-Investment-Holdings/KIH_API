@@ -323,6 +323,10 @@ class IntraAccountTransfer:
     def execute(cls, receiving_amount: Decimal, from_account: Union[CashAccount, ReserveAccount], to_account: Union[CashAccount, ReserveAccount], profile_type: ProfileTypes) -> "IntraAccountTransfer":
         user_profile: UserProfile = UserProfile.get_by_profile_type(profile_type)
 
+        if receiving_amount < Decimal("0"):
+            to_account, from_account = from_account, to_account
+            receiving_amount = receiving_amount * Decimal("-1")
+
         try:
             if isinstance(to_account, CashAccount):
                 if isinstance(from_account, ReserveAccount):
