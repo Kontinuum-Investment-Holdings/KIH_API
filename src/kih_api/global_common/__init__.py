@@ -36,7 +36,7 @@ class EnumNotFoundException(CustomException):
 
 def get_environment() -> Environment:
     try:
-        if get_environment_variable("ENV") == Environment.PROD:
+        if get_environment_variable("ENVIRONMENT") == Environment.PROD.value:
             return Environment.PROD
         else:
             return Environment.DEV
