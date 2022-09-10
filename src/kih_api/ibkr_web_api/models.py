@@ -10,7 +10,7 @@ import pytz
 import kih_api
 from kih_api import global_common, communication
 from kih_api.communication import telegram
-from kih_api.ibkr_web_api import ibkr_models
+from kih_api.ibkr_web_api import ibkr_models, common
 from kih_api.ibkr_web_api.exceptions import StockNotFoundException, StockDataNotAvailableException
 from kih_api.ibkr_web_api.ibkr_models import StockSearchResults, Contract, MarketDataSnapshot, PortfolioPositions, PortfolioAccounts, \
     MarketDataHistory, LiveOrders, LiveOrder
@@ -113,56 +113,55 @@ class Instrument:
             self.main_exchange = main_exchange
 
         if change_in_percentage is not None:
-            self.change_in_percentage = Decimal(str(change_in_percentage))
+            self.change_in_percentage = common.extract_decimal(change_in_percentage)
 
         if change_in_currency is not None:
-            self.change_in_currency = Decimal(str(change_in_currency))
+            self.change_in_currency = common.extract_decimal(change_in_currency)
 
         if bid_price is not None:
-            self.bid_price = Decimal(str(bid_price))
+            self.bid_price = common.extract_decimal(bid_price)
 
         if bid_size is not None:
-            self.bid_size = Decimal(str(bid_size))
+            self.bid_size = common.extract_decimal(bid_size)
 
         if ask_price is not None:
-            self.ask_price = Decimal(str(ask_price))
+            self.ask_price = common.extract_decimal(ask_price)
 
         if ask_size is not None:
-            self.ask_size = Decimal(str(ask_size))
+            self.ask_size = common.extract_decimal(ask_size)
 
         if volume is not None:
-            self.volume = Decimal(str(volume))
+            self.volume = common.extract_decimal(volume)
 
         if dividend_amount is not None:
-            self.dividend_amount = Decimal(str(dividend_amount))
+            self.dividend_amount = common.extract_decimal(dividend_amount)
 
         if earnings_per_share is not None:
-            self.earnings_per_share = Decimal(str(earnings_per_share))
+            self.earnings_per_share = common.extract_decimal(earnings_per_share)
 
         if price_to_earnings_ratio is not None:
-            self.price_to_earnings_ratio = Decimal(str(price_to_earnings_ratio))
+            self.price_to_earnings_ratio = common.extract_decimal(price_to_earnings_ratio)
 
         if market_capitalization is not None:
-            self.market_capitalization = kih_api.ibkr_web_api.common.get_number_from_text_with_suffixes(market_capitalization)
+            self.market_capitalization = common.extract_decimal(market_capitalization)
 
         if open_price is not None:
-            self.open_price = Decimal(str(open_price))
+            self.open_price = common.extract_decimal(open_price)
 
         if low_price is not None:
-            self.low_price = Decimal(str(low_price))
+            self.low_price = common.extract_decimal(low_price)
 
         if high_price is not None:
-            self.high_price = Decimal(str(high_price))
+            self.high_price = common.extract_decimal(high_price)
 
         if close_price is not None:
-            self.close_price = Decimal(str(close_price))
+            self.close_price = common.extract_decimal(close_price)
 
         if option_volume is not None:
-            self.option_volume = Decimal(str(
-                kih_api.ibkr_web_api.common.get_number_from_text_with_suffixes(option_volume)))
+            self.option_volume = common.extract_decimal(option_volume)
 
         if dividend_yield is not None:
-            self.dividend_yield = Decimal(str(dividend_yield).replace("%", ""))
+            self.dividend_yield = common.extract_decimal(str(dividend_yield).replace("%", ""))
 
     @classmethod
     def get(cls, symbol: str, instrument_type: InstrumentType, exchange: StockExchanges, number_of_tries: int = 0) -> "Instrument":

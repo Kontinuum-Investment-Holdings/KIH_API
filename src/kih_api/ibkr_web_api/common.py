@@ -5,7 +5,10 @@ from typing import Dict, Any, Optional
 threads: Dict[Any, threading.Thread] = {}
 
 
-def get_number_from_text_with_suffixes(number: str) -> Optional[Decimal]:
+def extract_decimal(number: str) -> Optional[Decimal]:
+    if isinstance(number, float):
+        return Decimal(str(number))
+
     if number.replace(".", "").isnumeric():
         return Decimal(number)
 
