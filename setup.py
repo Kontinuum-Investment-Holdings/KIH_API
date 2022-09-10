@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="kih_api",
-    version="0.9.23",
+    version="0.9.25",
     url="https://github.com/Kontinuum-Investment-Holdings/KIH_API",
     author="Kavindu Athaudha",
     author_email="kavindu@k-ih.co.uk",

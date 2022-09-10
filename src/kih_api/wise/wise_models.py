@@ -460,7 +460,7 @@ class IntraAccountTransfer(ResponseObject):
     endpoint: str = constants.ENDPOINT_INTRA_ACCOUNT_TRANSFER
 
     @classmethod
-    def call(cls, profile_id: int, source_balance_id: int, target_balance_id: int, amount: float, quote_id: str, currency: str) -> "IntraAccountTransfer":
+    def call(cls, profile_id: int, source_balance_id: int, target_balance_id: int, amount: float, quote_id: Optional[str], currency: str) -> "IntraAccountTransfer":
         parameters: Dict[str, Any] = {
             "profileId": profile_id,
             "sourceBalanceId": source_balance_id,
