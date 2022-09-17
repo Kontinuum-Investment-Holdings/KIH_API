@@ -144,10 +144,6 @@ def job(job_name: str) -> Callable:
                     f"Running job: <i>{job_name}</i>", True)
                 logger.debug(f"Running job: {job_name}")
                 func(*args, **kwargs)
-                logger.debug(f"Job ended: {job_name}")
-                telegram.send_message(
-                    telegram.constants.telegram_channel_username,
-                    f"Job ended: <i>{job_name}</i>", True)
             except Exception as e:
                 message = f"<b><u>ERROR</u></b>\n\nJob Name: <i>{job_name}</i>\nError Type: <i>{type(e).__name__}</i>"
                 if str(e) != "":
@@ -155,6 +151,11 @@ def job(job_name: str) -> Callable:
                 telegram.send_message(telegram.constants.telegram_channel_username, message,
                                                     True)
                 raise Exception(e)
+            finally:
+                logger.debug(f"Job ended: {job_name}")
+                telegram.send_message(
+                    telegram.constants.telegram_channel_username,
+                    f"Job ended: <i>{job_name}</i>", True)
 
         return wrapper
 
