@@ -3,22 +3,27 @@ from __future__ import annotations
 import enum
 import typing
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from decimal import Decimal
+from functools import cache
 from typing import List, Optional, Union
 
-import kih_api
-from kih_api import global_common, communication
+import pytz
+
+from kih_api import global_common
 from kih_api.communication import telegram
 from kih_api.finance_database.exceptions import InsufficientFundsException, AccountForCurrencyNotFoundException
 from kih_api.http_requests import ClientErrorException
 from kih_api.logger import logger
 from kih_api.wise import wise_models
-from kih_api.wise.exceptions import MultipleUserProfilesWithSameTypeException, MultipleRecipientsWithSameAccountNumberException, TransferringMoneyToNonSelfOwnedAccountsException, ReserveAccountNotFoundException
+from kih_api.wise.exceptions import MultipleUserProfilesWithSameTypeException, \
+    MultipleRecipientsWithSameAccountNumberException, TransferringMoneyToNonSelfOwnedAccountsException, \
+    ReserveAccountNotFoundException
 
 
-class ProfileTypes(enum.Enum):
-    PERSONAL: str = "personal"
-    BUSINESS: str = "business"
+class ProfileType(enum.Enum):
+    Personal: str = "personal"
+    Business: str = "business"
 
 
 class AccountType(enum.Enum):
@@ -29,7 +34,7 @@ class AccountType(enum.Enum):
 @dataclass
 class UserProfile:
     id: int
-    type: ProfileTypes
+    type: ProfileType
     first_name: str
     last_name: str
     date_of_birth: str
@@ -39,12 +44,12 @@ class UserProfile:
         user_profiles_list: List[UserProfile] = []
 
         for wise_user_profile in wise_models.UserProfiles.call():
-            user_profiles_list.append(UserProfile(wise_user_profile.id, global_common.get_enum_from_value(wise_user_profile.type, ProfileTypes), wise_user_profile.details.firstName, wise_user_profile.details.lastName, wise_user_profile.details.dateOfBirth))
+            user_profiles_list.append(UserProfile(wise_user_profile.id, global_common.get_enum_from_value(wise_user_profile.type, ProfileType), wise_user_profile.details.firstName, wise_user_profile.details.lastName, wise_user_profile.details.dateOfBirth))
 
         return user_profiles_list
 
     @classmethod
-    def get_by_profile_type(cls, profile_type: ProfileTypes) -> "UserProfile":
+    def get_by_profile_type(cls, profile_type: ProfileType) -> "UserProfile":
         return_user_profile: UserProfile = None
 
         for user_profile in UserProfile.get_all():
@@ -63,31 +68,33 @@ class Account:
     balance: Decimal
     type: AccountType
     name: str
-    profile_type: ProfileTypes
+    account_type: AccountType
+    user_profile: UserProfile
 
-    def __init__(self, wise_account: wise_models.Account):
+    def __init__(self, wise_account: wise_models.Account, user_profile: UserProfile):
         self.id = wise_account.id
         self.currency = global_common.get_enum_from_value(wise_account.currency, global_common.Currency)
         self.balance = Decimal(str(wise_account.cashAmount.value))
         self.type = global_common.get_enum_from_value(wise_account.type, AccountType)
-        self.profile_type = global_common.get_enum_from_value(wise_account.type, AccountType)
+        self.account_type = global_common.get_enum_from_value(wise_account.type, AccountType)
+        self.user_profile = user_profile
 
     @classmethod
-    def get_all_by_profile_type(cls, profile_type: ProfileTypes) -> List["CashAccount" | "ReserveAccount"]:
+    def get_all_by_profile_type(cls, profile_type: ProfileType) -> List["CashAccount" | "ReserveAccount"]:
         user_profile: UserProfile = UserProfile.get_by_profile_type(profile_type)
         accounts_list: List["CashAccount" | "ReserveAccount"] = []
 
         for wise_account in wise_models.Account.call(user_profile.id):
             account_type: AccountType = global_common.get_enum_from_value(wise_account.type, AccountType)
             if account_type == AccountType.CashAccount:
-                accounts_list.append(CashAccount(wise_account))
+                accounts_list.append(CashAccount(wise_account, user_profile))
             elif account_type == AccountType.ReserveAccount:
-                accounts_list.append(ReserveAccount(wise_account))
+                accounts_list.append(ReserveAccount(wise_account, user_profile))
 
         return accounts_list
 
     @classmethod
-    def get_by_profile_type_and_currency(cls, profile_type: ProfileTypes, currency: global_common.Currency) -> "CashAccount" | "ReserveAccount":
+    def get_by_profile_type_and_currency(cls, profile_type: ProfileType, currency: global_common.Currency) -> "CashAccount" | "ReserveAccount":
         all_accounts_list: List["CashAccount" | "ReserveAccount"] = Account.get_all_by_profile_type(profile_type)
         for account in all_accounts_list:
             if account.currency == currency:
@@ -99,12 +106,12 @@ class Account:
 class ReserveAccount(Account):
     name: str
 
-    def __init__(self, wise_account: wise_models.Account):
-        super().__init__(wise_account)
+    def __init__(self, wise_account: wise_models.Account, user_profile: UserProfile):
+        super().__init__(wise_account, user_profile)
         self.name = wise_account.name
 
     @classmethod
-    def get_all_by_profile_type(cls, profile_type: ProfileTypes) -> List["ReserveAccount"]:  # type: ignore
+    def get_all_by_profile_type(cls, profile_type: ProfileType) -> List["ReserveAccount"]:  # type: ignore
         all_accounts: List["CashAccount" | "ReserveAccount"] = super().get_all_by_profile_type(profile_type)
         all_cash_accounts: List[ReserveAccount] = []
 
@@ -114,7 +121,7 @@ class ReserveAccount(Account):
         return all_cash_accounts
 
     @classmethod
-    def get_by_profile_type_and_currency(cls, profile_type: ProfileTypes, currency: global_common.Currency) -> List["ReserveAccount"]:  # type: ignore
+    def get_by_profile_type_and_currency(cls, profile_type: ProfileType, currency: global_common.Currency) -> List["ReserveAccount"]:  # type: ignore
         all_accounts_list: List[ReserveAccount] = ReserveAccount.get_all_by_profile_type(profile_type)
         reserve_account_list: List[ReserveAccount] = []
         for account in all_accounts_list:
@@ -123,7 +130,12 @@ class ReserveAccount(Account):
         return reserve_account_list
 
     @classmethod
-    def get_reserve_account_by_profile_type_currency_and_name(cls, profile_type: ProfileTypes, currency: global_common.Currency, name: str, create_if_unavailable: bool = False) -> "ReserveAccount":
+    @cache
+    def get_by_cached_profile_type_and_currency(cls, profile_type: ProfileType, currency: global_common.Currency) -> List["ReserveAccount"]:
+        return ReserveAccount.get_by_profile_type_and_currency(profile_type, currency)
+
+    @classmethod
+    def get_reserve_account_by_profile_type_currency_and_name(cls, profile_type: ProfileType, currency: global_common.Currency, name: str, create_if_unavailable: bool = False) -> "ReserveAccount":
         all_reserve_accounts_list: List[ReserveAccount] = ReserveAccount.get_by_profile_type_and_currency(profile_type, currency)
         for reserve_account in all_reserve_accounts_list:
             if reserve_account.name == name:
@@ -134,7 +146,7 @@ class ReserveAccount(Account):
             raise ReserveAccountNotFoundException()
 
     @classmethod
-    def create_reserve_account(cls, name: str, currency: global_common.Currency, profile_type: ProfileTypes, check_if_available_before_creation: bool = True) -> "ReserveAccount":
+    def create_reserve_account(cls, name: str, currency: global_common.Currency, profile_type: ProfileType, check_if_available_before_creation: bool = True) -> "ReserveAccount":
         if check_if_available_before_creation:
             try:
                 return ReserveAccount.get_reserve_account_by_profile_type_currency_and_name(profile_type, currency, name)
@@ -148,11 +160,11 @@ class ReserveAccount(Account):
 @dataclass
 class CashAccount(Account):
 
-    def __init__(self, wise_account: wise_models.Account):
-        super().__init__(wise_account)
+    def __init__(self, wise_account: wise_models.Account, user_profile: UserProfile):
+        super().__init__(wise_account, user_profile)
 
     @classmethod
-    def get_all_by_profile_type(cls, profile_type: ProfileTypes) -> List["CashAccount"]:  # type: ignore
+    def get_all_by_profile_type(cls, profile_type: ProfileType) -> List["CashAccount"]:  # type: ignore
         all_accounts: List["CashAccount" | "ReserveAccount"] = super().get_all_by_profile_type(profile_type)
         all_cash_accounts: List[CashAccount] = []
 
@@ -162,7 +174,7 @@ class CashAccount(Account):
         return all_cash_accounts
 
     @classmethod
-    def get_by_profile_type_and_currency(cls, profile_type: ProfileTypes, currency: global_common.Currency) -> "CashAccount":
+    def get_by_profile_type_and_currency(cls, profile_type: ProfileType, currency: global_common.Currency) -> "CashAccount":
         all_accounts_list: List[CashAccount] = CashAccount.get_all_by_profile_type(profile_type)
         for account in all_accounts_list:
             if account.currency == currency:
@@ -198,7 +210,7 @@ class Recipient:
     bic: str
 
     @classmethod
-    def get_all_by_profile_type(cls, profile_type: ProfileTypes) -> List["Recipient"]:
+    def get_all_by_profile_type(cls, profile_type: ProfileType) -> List["Recipient"]:
         user_profile: UserProfile = UserProfile.get_by_profile_type(profile_type)
         recipient_list: List[Recipient] = []
 
@@ -208,7 +220,7 @@ class Recipient:
         return recipient_list
 
     @classmethod
-    def get_by_account_number_and_profile_type(cls, account_number: str, profile_type: ProfileTypes) -> "Recipient":
+    def get_by_account_number_and_profile_type(cls, account_number: str, profile_type: ProfileType) -> "Recipient":
         return_recipient: Recipient = None
         for recipient in Recipient.get_all_by_profile_type(profile_type):
             if recipient.account_number == account_number:
@@ -246,7 +258,7 @@ class Transfer:
         self.error_code = wise_fund.errorCode
 
     @classmethod
-    def execute(cls, receiving_amount: Decimal, from_currency: global_common.Currency, to_currency: global_common.Currency, recipient_account_number: str, reference: str, profile_type: ProfileTypes) -> "Transfer":
+    def execute(cls, receiving_amount: Decimal, from_currency: global_common.Currency, to_currency: global_common.Currency, recipient_account_number: str, reference: str, profile_type: ProfileType) -> "Transfer":
         recipient: Recipient = Recipient.get_by_account_number_and_profile_type(recipient_account_number, profile_type)
 
         if not recipient.is_self_owned:
@@ -321,7 +333,7 @@ class IntraAccountTransfer:
         self.is_successful = intra_account_transfer.state == "COMPLETED"
 
     @classmethod
-    def execute(cls, receiving_amount: Decimal, from_account: Union[CashAccount, ReserveAccount], to_account: Union[CashAccount, ReserveAccount], profile_type: ProfileTypes) -> "IntraAccountTransfer":
+    def execute(cls, receiving_amount: Decimal, from_account: Union[CashAccount, ReserveAccount], to_account: Union[CashAccount, ReserveAccount], profile_type: ProfileType) -> "IntraAccountTransfer":
         user_profile: UserProfile = UserProfile.get_by_profile_type(profile_type)
 
         if receiving_amount < Decimal("0"):
@@ -398,3 +410,58 @@ class IntraAccountTransfer:
                 f"\nTo: <i>{to_account.name if isinstance(to_account, ReserveAccount) else ''} ({to_account.currency.value})</i>", True)
 
         return intra_account_transfer
+
+
+class TransactionType(enum.Enum):
+    Card: str = "CARD"
+    Balance: str = "BALANCE"
+    Transfer: str = "TRANSFER"
+
+@dataclass
+class Transaction:
+    transaction_type: TransactionType
+    timestamp: datetime
+    currency: global_common.Currency
+    total_amount: Decimal
+    fees: Decimal
+    transaction_amount: Decimal
+    running_balance: Decimal
+    reference: Optional[str]
+    entity: Optional[str | Account]
+    profile_type: ProfileType
+
+    def __init__(self, wise_transaction: wise_models.Transaction, profile_type: ProfileType):
+        self.profile_type = profile_type
+        self.transaction_type = global_common.get_enum_from_value(wise_transaction.referenceNumber.split("-")[0] , TransactionType)
+        self.timestamp = pytz.utc.localize(datetime.fromisoformat(wise_transaction.date.split(".")[0]))
+        self.currency = global_common.get_enum_from_value(wise_transaction.runningBalance.currency, global_common.Currency)
+        self.total_amount = Decimal(str(wise_transaction.amount.value))
+        self.fees = Decimal(str(wise_transaction.totalFees.value))
+        self.transaction_amount = self.total_amount - self.fees if self.total_amount > Decimal("0") else self.total_amount + self.fees
+        self.running_balance = Decimal(str(wise_transaction.runningBalance.value))
+        self.reference = wise_transaction.details.paymentReference
+        self.get_entity(wise_transaction)
+
+    def get_entity(self, wise_transaction: wise_models.Transaction) -> None:
+        if self.transaction_type == TransactionType.Transfer:
+            self.entity = wise_transaction.details.description.replace("Received money from ", "").replace(" with reference ", "").replace("Sent money to ","")
+        elif self.transaction_type == TransactionType.Card:
+            self.entity = wise_transaction.details.description.split("issued by ")[1]
+        elif self.transaction_type == TransactionType.Balance:
+            reserve_account_name: str = wise_transaction.details.description.split(" to ")[1] if "to" in wise_transaction.details.description else wise_transaction.details.description.split(" from ")[1]
+            try:
+                self.entity = list(filter(lambda reserve_account: reserve_account.name == reserve_account_name, ReserveAccount.get_by_cached_profile_type_and_currency(self.profile_type, self.currency)))[0]
+            except IndexError:
+                self.entity = None
+
+
+
+    @classmethod
+    def get_all(cls, account: Account, start_time: datetime = datetime.now() - timedelta(days=1), end_time: datetime = datetime.now()) -> List["Transaction"]:
+        wise_account_statement: wise_models.AccountStatement = wise_models.AccountStatement.call(account.user_profile.id, account.id, start_time, end_time)
+        transaction_list: List[Transaction] = []
+
+        for transaction in wise_account_statement.transactions:
+            transaction_list.append(Transaction(transaction, account.user_profile.type))
+
+        return transaction_list

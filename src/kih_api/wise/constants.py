@@ -17,3 +17,4 @@ ENDPOINT_RECIPIENT_ACCOUNTS_LIST: str = ENDPOINT_BASE + "v1/accounts?profile={pr
 ENDPOINT_FUND: str = ENDPOINT_BASE + "v3/profiles/{profile_id}/transfers/{transfer_id}/payments"
 ENDPOINT_CREATE_ACCOUNT: str = ENDPOINT_BASE + "v3/profiles/{profile_id}/balances"
 ENDPOINT_INTRA_ACCOUNT_TRANSFER: str = ENDPOINT_BASE + "v2/profiles/{profile_id}/balance-movements"
+ENDPOINT_ACCOUNT_STATEMENT: str = ENDPOINT_BASE + "v1/profiles/{profile_id}/balance-statements/{balance_id}/statement.json"

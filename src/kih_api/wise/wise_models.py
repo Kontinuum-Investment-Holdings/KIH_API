@@ -1,5 +1,6 @@
 import uuid
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Optional, List, Dict, Any
 
 from requests import Response
@@ -56,7 +57,7 @@ class Amount:
 
 @dataclass
 class BankAddress:
-    stateCode: None
+    stateCode: None = None
     postCode: Optional[int] = None
     addressFirstLine: Optional[str] = None
     city: Optional[str] = None
@@ -426,7 +427,7 @@ class BalancesAfter:
 
 @dataclass
 class Step:
-    tracingReferenceCode: None
+    tracingReferenceCode: None = None
     channelReferenceId: Optional[str] = None
     id: Optional[int] = None
     transactionId: Optional[int] = None
@@ -476,4 +477,121 @@ class IntraAccountTransfer(ResponseObject):
         headers["X-idempotence-uuid"] = str(uuid.uuid4())
 
         response: Response = http_requests.post(cls.endpoint.replace("{profile_id}", str(profile_id)), parameters=parameters, headers=headers)
+        return common.get_model_from_response(response, cls)  # type: ignore
+
+
+@dataclass
+class Address:
+    stateCode: None = None
+    addressFirstLine: Optional[str] = None
+    city: Optional[str] = None
+    postCode: Optional[str] = None
+    countryName: Optional[str] = None
+
+
+@dataclass
+class AccountHolder:
+    type: Optional[str] = None
+    address: Optional[Address] = None
+    firstName: Optional[str] = None
+    lastName: Optional[str] = None
+
+
+@dataclass
+class EndOfStatementBalance:
+    value: Optional[float] = None
+    currency: Optional[str] = None
+    zero: Optional[bool] = None
+
+
+@dataclass
+class Issuer:
+    stateCode: None = None
+    name: Optional[str] = None
+    firstLine: Optional[str] = None
+    city: Optional[str] = None
+    postCode: Optional[str] = None
+    countryCode: Optional[str] = None
+    country: Optional[str] = None
+
+
+@dataclass
+class Query:
+    intervalStart: Optional[str] = None
+    intervalEnd: Optional[str] = None
+    type: Optional[str] = None
+    currency: Optional[str] = None
+    profileId: Optional[int] = None
+    timezone: Optional[str] = None
+
+
+@dataclass
+class Request:
+    balanceName: None = None
+    id: Optional[str] = None
+    creationTime: Optional[str] = None
+    profileId: Optional[int] = None
+    currency: Optional[str] = None
+    balanceId: Optional[int] = None
+    intervalStart: Optional[str] = None
+    intervalEnd: Optional[str] = None
+
+
+@dataclass
+class Recipient:
+    name: Optional[str] = None
+    bankAccount: Optional[str] = None
+
+
+@dataclass
+class Details:
+    type: Optional[str] = None
+    description: Optional[str] = None
+    sourceAmount: Optional[EndOfStatementBalance] = None
+    targetAmount: Optional[EndOfStatementBalance] = None
+    rate: Optional[float] = None
+    recipient: Optional[Recipient] = None
+    paymentReference: Optional[str] = None
+
+
+@dataclass
+class ExchangeDetails:
+    toAmount: Optional[EndOfStatementBalance] = None
+    fromAmount: Optional[EndOfStatementBalance] = None
+    rate: Optional[float] = None
+
+
+@dataclass
+class Transaction:
+    attachment: None = None
+    type: Optional[str] = None
+    date: Optional[str] = None
+    amount: Optional[EndOfStatementBalance] = None
+    totalFees: Optional[EndOfStatementBalance] = None
+    details: Optional[Details] = None
+    exchangeDetails: Optional[ExchangeDetails] = None
+    runningBalance: Optional[EndOfStatementBalance] = None
+    referenceNumber: Optional[str] = None
+    activityAssetAttributions: Optional[List[Any]] = None
+
+@dataclass
+class AccountStatement(ResponseObject):
+    endOfStatementUnrealisedGainLoss: None = None
+    balanceAssetConfiguration: None = None
+    accountHolder: Optional[AccountHolder] = None
+    issuer: Optional[Issuer] = None
+    bankDetails: Optional[List[Any]] = None
+    transactions: Optional[List[Transaction]] = None
+    endOfStatementBalance: Optional[EndOfStatementBalance] = None
+    query: Optional[Query] = None
+    request: Optional[Request] = None
+    endpoint: str = constants.ENDPOINT_ACCOUNT_STATEMENT
+
+    @classmethod
+    def call(cls, profile_id: int, balance_id: int, start_time: datetime, end_time: datetime) -> "AccountStatement":
+        parameters: Dict[str, str] = {
+            "intervalStart": f"{start_time.isoformat()}Z",
+            "intervalEnd": f"{end_time.isoformat()}Z"
+        }
+        response: Response = http_requests.get(cls.endpoint.replace("{profile_id}", str(profile_id)).replace("{balance_id}", str(balance_id)), parameters=parameters, headers=constants.HEADERS)
         return common.get_model_from_response(response, cls)  # type: ignore
