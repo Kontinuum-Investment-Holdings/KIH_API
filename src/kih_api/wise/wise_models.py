@@ -18,7 +18,7 @@ class UserProfileDetails:
     abn: None = None
     arbn: None = None
     webpage: None = None
-    businessSubCategory: None = None
+    businessSubCategory: str = None
     avatar: Optional[str] = None
     occupation: Optional[str] = None
     firstName: Optional[str] = None
