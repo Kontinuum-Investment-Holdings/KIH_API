@@ -140,7 +140,7 @@ def job(job_name: str) -> Callable:
             from kih_api.communication import telegram
             try:
                 telegram.send_message(
-                    telegram.constants.telegram_channel_username,
+                    telegram.constants.telegram_debug_channel_username,
                     f"Running job: <i>{job_name}</i>", True)
                 logger.debug(f"Running job: {job_name}")
                 func(*args, **kwargs)
@@ -154,7 +154,7 @@ def job(job_name: str) -> Callable:
             finally:
                 logger.debug(f"Job ended: {job_name}")
                 telegram.send_message(
-                    telegram.constants.telegram_channel_username,
+                    telegram.constants.telegram_debug_channel_username,
                     f"Job ended: <i>{job_name}</i>", True)
 
         return wrapper
