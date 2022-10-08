@@ -168,11 +168,6 @@ class ExchangeRate(ResponseObject):
 
 
 @dataclass
-class Details:
-    reference: Optional[str] = None
-
-
-@dataclass
 class Transfer(ResponseObject):
     transferRequest: None = None
     sourceAccount: None = None
@@ -186,7 +181,7 @@ class Transfer(ResponseObject):
     rate: Optional[float] = None
     created: Optional[str] = None
     business: Optional[int] = None
-    details: Optional[Details] = None
+    details: Optional["Details"] = None
     hasActiveIssues: Optional[bool] = None
     sourceCurrency: Optional[str] = None
     sourceValue: Optional[float] = None
@@ -481,15 +476,6 @@ class IntraAccountTransfer(ResponseObject):
 
 
 @dataclass
-class Address:
-    stateCode: None = None
-    addressFirstLine: Optional[str] = None
-    city: Optional[str] = None
-    postCode: Optional[str] = None
-    countryName: Optional[str] = None
-
-
-@dataclass
 class AccountHolder:
     type: Optional[str] = None
     address: Optional[Address] = None
@@ -535,12 +521,6 @@ class Request:
     balanceId: Optional[int] = None
     intervalStart: Optional[str] = None
     intervalEnd: Optional[str] = None
-
-
-@dataclass
-class Recipient:
-    name: Optional[str] = None
-    bankAccount: Optional[str] = None
 
 
 @dataclass

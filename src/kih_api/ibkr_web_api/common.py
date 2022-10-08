@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import threading
 from decimal import Decimal
 from typing import Dict, Any, Optional
@@ -5,7 +7,7 @@ from typing import Dict, Any, Optional
 threads: Dict[Any, threading.Thread] = {}
 
 
-def extract_decimal(number: str) -> Optional[Decimal]:
+def extract_decimal(number: str | float) -> Optional[Decimal]:
     if isinstance(number, float):
         return Decimal(str(number))
 
