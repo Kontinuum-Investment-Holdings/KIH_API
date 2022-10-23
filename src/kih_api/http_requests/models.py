@@ -1,5 +1,6 @@
 import enum
 from dataclasses import dataclass
+from typing import Optional
 
 from requests import Response
 
@@ -13,6 +14,6 @@ class MethodType(enum.Enum):
 
 @dataclass
 class ResponseObject:
-    response: Response
-    is_successful: bool
-    endpoint: str
+    response: Optional[Response] = None
+    is_successful: Optional[bool] = None
+    endpoint: Optional[str] = None
