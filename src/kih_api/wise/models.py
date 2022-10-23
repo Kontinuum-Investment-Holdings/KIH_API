@@ -416,6 +416,7 @@ class TransactionType(enum.Enum):
     Card: str = "CARD"
     Balance: str = "BALANCE"
     Transfer: str = "TRANSFER"
+    WISE_AUTOMATED_TRANSACTION: str = "OPS"
 
 @dataclass
 class Transaction:
