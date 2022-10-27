@@ -11,6 +11,9 @@ from kih_api.http_requests.models import ResponseObject
 from kih_api.wise import constants
 
 
+def get_header(api_key: str) -> Dict[str, str]:
+    return {"Authorization": f"Bearer {api_key}"}
+
 @dataclass
 class UserProfileDetails:
     occupations: None = None
@@ -44,8 +47,8 @@ class UserProfiles(ResponseObject):
     endpoint: str = constants.ENDPOINT_PROFILES
 
     @classmethod
-    def call(cls) -> List["UserProfiles"]:
-        response: Response = http_requests.get(cls.endpoint, headers=constants.HEADERS)
+    def call(cls, api_key: str) -> List["UserProfiles"]:
+        response: Response = http_requests.get(cls.endpoint, headers=get_header(api_key))
         return common.get_model_from_response(response, cls)  # type: ignore
 
 
@@ -122,19 +125,19 @@ class Account(ResponseObject):
     endpoint_create_account: str = constants.ENDPOINT_CREATE_ACCOUNT
 
     @classmethod
-    def call(cls, profile_id: int) -> List["Account"]:
+    def call(cls, api_key: str, profile_id: int) -> List["Account"]:
         from kih_api.wise.models import AccountType
 
-        response: Response = http_requests.get(cls.endpoint.replace("{profile_id}", str(profile_id)).replace("{account_type}", AccountType.CashAccount.value), headers=constants.HEADERS)
+        response: Response = http_requests.get(cls.endpoint.replace("{profile_id}", str(profile_id)).replace("{account_type}", AccountType.CashAccount.value), headers=get_header(api_key))
         all_accounts_list: List[Account] = common.get_model_from_response(response, cls)  # type: ignore
 
-        response = http_requests.get(cls.endpoint.replace("{profile_id}", str(profile_id)).replace("{account_type}", AccountType.ReserveAccount.value), headers=constants.HEADERS)
+        response = http_requests.get(cls.endpoint.replace("{profile_id}", str(profile_id)).replace("{account_type}", AccountType.ReserveAccount.value), headers=get_header(api_key))
         all_accounts_list.extend(common.get_model_from_response(response, cls))  # type: ignore
 
         return all_accounts_list
 
     @classmethod
-    def create_reserve_account(cls, name: str, currency: global_common.Currency, profile_id: int) -> None:
+    def call_create_reserve_account(cls, api_key: str, name: str, currency: global_common.Currency, profile_id: int) -> None:
         from kih_api.wise.models import AccountType
 
         parameters: Dict[str, Any] = {
@@ -143,7 +146,7 @@ class Account(ResponseObject):
             "name": name
         }
 
-        headers = constants.HEADERS.copy()
+        headers = get_header(api_key)
         headers["X-idempotence-uuid"] = str(uuid.uuid4())
         http_requests.post(cls.endpoint_create_account.replace("{profile_id}", str(profile_id)), parameters=parameters, headers=headers)
 
@@ -157,12 +160,12 @@ class ExchangeRate(ResponseObject):
     endpoint: str = constants.ENDPOINT_EXCHANGE_RATES
 
     @classmethod
-    def call(cls, source_currency: str = None, target_currency: str = None) -> "ExchangeRate":
+    def call(cls, api_key: str, source_currency: str = None, target_currency: str = None) -> "ExchangeRate":
 
         if source_currency is not None and target_currency is not None:
-            response: Response = http_requests.get(cls.endpoint + f"?source={source_currency}&target={target_currency}", headers=constants.HEADERS)
+            response: Response = http_requests.get(cls.endpoint + f"?source={source_currency}&target={target_currency}", headers=get_header(api_key))
         else:
-            response = http_requests.get(cls.endpoint, headers=constants.HEADERS)
+            response = http_requests.get(cls.endpoint, headers=get_header(api_key))
 
         return common.get_model_from_response(response, cls)[0]  # type: ignore
 
@@ -191,7 +194,7 @@ class Transfer(ResponseObject):
     endpoint: str = constants.ENDPOINT_TRANSFER
 
     @classmethod
-    def call(cls, target_account_id: int, quote_uuid: str, reference: str) -> "Transfer":
+    def call(cls, api_key: str, target_account_id: int, quote_uuid: str, reference: str) -> "Transfer":
         parameters: Dict[str, Any] = {
             "targetAccount": target_account_id,
             "quoteUuid": quote_uuid,
@@ -199,7 +202,7 @@ class Transfer(ResponseObject):
             "details": {"reference": reference}
         }
 
-        response: Response = http_requests.post(cls.endpoint, parameters=parameters, headers=constants.HEADERS)
+        response: Response = http_requests.post(cls.endpoint, parameters=parameters, headers=get_header(api_key))
         return common.get_model_from_response(response, cls)  # type: ignore
 
 
@@ -283,7 +286,7 @@ class Quote(ResponseObject):
     endpoint: str = constants.ENDPOINT_QUOTE
 
     @classmethod
-    def call(cls, profile_id: int, source_currency: str, target_currency: str, target_amount: float) -> "Quote":
+    def call(cls, api_key: str, profile_id: int, source_currency: str, target_currency: str, target_amount: float) -> "Quote":
         parameters: Dict[str, Any] = {
             "profile": profile_id,
             "sourceCurrency": source_currency,
@@ -291,7 +294,7 @@ class Quote(ResponseObject):
             "targetAmount": target_amount,
             "payOut": "BALANCE"
         }
-        response: Response = http_requests.post(cls.endpoint.replace("{profile_id}", str(profile_id)), parameters=parameters, headers=constants.HEADERS)
+        response: Response = http_requests.post(cls.endpoint.replace("{profile_id}", str(profile_id)), parameters=parameters, headers=get_header(api_key))
         return common.get_model_from_response(response, cls)  # type: ignore
 
 
@@ -384,8 +387,8 @@ class Recipient(ResponseObject):
     endpoint: str = constants.ENDPOINT_RECIPIENT_ACCOUNTS_LIST
 
     @classmethod
-    def call(cls, profile_id: int) -> List["Recipient"]:
-        response: Response = http_requests.get(cls.endpoint.replace("{profile_id}", str(profile_id)), headers=constants.HEADERS)
+    def call(cls, api_key: str, profile_id: int) -> List["Recipient"]:
+        response: Response = http_requests.get(cls.endpoint.replace("{profile_id}", str(profile_id)), headers=get_header(api_key))
         return common.get_model_from_response(response, cls)  # type: ignore
 
 
@@ -399,8 +402,8 @@ class Fund(ResponseObject):
     endpoint: str = constants.ENDPOINT_FUND
 
     @classmethod
-    def call(cls, profile_id: int, transfer_id: int) -> "Fund":
-        response: Response = http_requests.post(cls.endpoint.replace("{profile_id}", str(profile_id)).replace("{transfer_id}", str(transfer_id)), parameters={"type": "BALANCE"}, headers=constants.HEADERS)
+    def call(cls, api_key: str, profile_id: int, transfer_id: int) -> "Fund":
+        response: Response = http_requests.post(cls.endpoint.replace("{profile_id}", str(profile_id)).replace("{transfer_id}", str(transfer_id)), parameters={"type": "BALANCE"}, headers=get_header(api_key))
         return common.get_model_from_response(response, cls)  # type: ignore
 
 
@@ -456,7 +459,7 @@ class IntraAccountTransfer(ResponseObject):
     endpoint: str = constants.ENDPOINT_INTRA_ACCOUNT_TRANSFER
 
     @classmethod
-    def call(cls, profile_id: int, source_balance_id: int, target_balance_id: int, amount: float, quote_id: Optional[str], currency: str) -> "IntraAccountTransfer":
+    def call(cls, api_key: str, profile_id: int, source_balance_id: int, target_balance_id: int, amount: float, quote_id: Optional[str], currency: str) -> "IntraAccountTransfer":
         parameters: Dict[str, Any] = {
             "profileId": profile_id,
             "sourceBalanceId": source_balance_id,
@@ -468,7 +471,7 @@ class IntraAccountTransfer(ResponseObject):
         else:
             parameters["quoteId"] = quote_id
 
-        headers = constants.HEADERS.copy()
+        headers = get_header(api_key)
         headers["X-idempotence-uuid"] = str(uuid.uuid4())
 
         response: Response = http_requests.post(cls.endpoint.replace("{profile_id}", str(profile_id)), parameters=parameters, headers=headers)
@@ -568,10 +571,10 @@ class AccountStatement(ResponseObject):
     endpoint: str = constants.ENDPOINT_ACCOUNT_STATEMENT
 
     @classmethod
-    def call(cls, profile_id: int, balance_id: int, start_time: datetime, end_time: datetime) -> "AccountStatement":
+    def call(cls, api_key: str, profile_id: int, balance_id: int, start_time: datetime, end_time: datetime) -> "AccountStatement":
         parameters: Dict[str, str] = {
             "intervalStart": f"{start_time.isoformat()}Z",
             "intervalEnd": f"{end_time.isoformat()}Z"
         }
-        response: Response = http_requests.get(cls.endpoint.replace("{profile_id}", str(profile_id)).replace("{balance_id}", str(balance_id)), parameters=parameters, headers=constants.HEADERS)
+        response: Response = http_requests.get(cls.endpoint.replace("{profile_id}", str(profile_id)).replace("{balance_id}", str(balance_id)), parameters=parameters, headers=get_header(api_key))
         return common.get_model_from_response(response, cls)  # type: ignore

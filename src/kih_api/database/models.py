@@ -28,7 +28,7 @@ class DatabaseDocument(Document):
         for key, value in all_data.copy().items():
             if isinstance(value, (DatabaseDocument, EmbeddedDocument, SON)):
                 all_data[key] = DatabaseDocument.get_raw_son(value)
-            elif isinstance(value, List):
+            elif isinstance(value, List):   # type: ignore[unreachable]
                 new_list: List[Any] = []
                 for item in value:
                     if isinstance(item, Decimal):

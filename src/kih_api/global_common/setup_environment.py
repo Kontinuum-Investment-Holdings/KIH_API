@@ -8,7 +8,7 @@ environment_variables: Dict[str, str] = {"KIH_API_TELEGRAM_BOT_TOKEN": "telegram
                                          "TELEGRAM_BOT_USERNAME": "Telegram bot username",
                                          "KIH_API_EMAIL_ACCOUNT": "outgoing email address",
                                          "KIH_API_EMAIL_ACCOUNT_PASSWORD": "email address' password",
-                                         "TRANSFER_WISE_API_KEY": "TransferWise API Key",
+                                         "WISE_API_KEY": "Wise API Key",
                                          "ALPACA_API_KEY": "Alpaca API Key",
                                          "ALPACA_API_SECRET": "Alpaca API Secret",
                                          "MONGO_DB_URI": "The Mongo DB URL",

@@ -3,8 +3,6 @@ from typing import Dict
 
 from kih_api import global_common
 
-API_KEY: str = global_common.get_environment_variable("TRANSFER_WISE_API_KEY")
-HEADERS: Dict[str, str] = {"Authorization": f"Bearer {API_KEY}"}
 ENDPOINT_BASE_SANDBOX: str = "https://api.transferwise.com/" if global_common.get_environment() == global_common.Environment.PROD else "https://api.sandbox.transferwise.tech/"
 ENDPOINT_BASE_LIVE: str = "https://api.transferwise.com/"
 ENDPOINT_BASE: str = ENDPOINT_BASE_SANDBOX
