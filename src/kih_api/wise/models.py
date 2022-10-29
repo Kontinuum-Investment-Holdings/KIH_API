@@ -160,9 +160,9 @@ class Account(ABC):
                 self.balance = ReserveAccount.get_reserve_account_by_profile_type_currency_and_name(self.api_key, self.user_profile.type, self.currency, self.name, False).balance
 
             if isinstance(to_account, CashAccount):
-                to_account = Account.get_by_profile_type_and_currency(self.api_key, self.user_profile.type, self.currency)
+                to_account.balance = Account.get_by_profile_type_and_currency(self.api_key, self.user_profile.type, self.currency).balance
             else:
-                to_account = ReserveAccount.get_reserve_account_by_profile_type_currency_and_name(self.api_key, self.user_profile.type, self.currency, self.name)
+                to_account.balance = ReserveAccount.get_reserve_account_by_profile_type_currency_and_name(self.api_key, self.user_profile.type, self.currency, self.name).balance
 
         return intra_account_transfer
 
