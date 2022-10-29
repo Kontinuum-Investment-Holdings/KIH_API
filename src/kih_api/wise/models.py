@@ -238,11 +238,9 @@ class ReserveAccount(Account):
             try:
                 return ReserveAccount.get_reserve_account_by_profile_type_currency_and_name(api_key, profile_type, currency, name)
             except ReserveAccountNotFoundException:
-                pass
+                wise_models.Account.call_create_reserve_account(api_key, name, currency, UserProfile.get_by_profile_type(api_key, profile_type).id)
 
-        wise_models.Account.call_create_reserve_account(api_key, name, currency, UserProfile.get_by_profile_type(api_key, profile_type).id)
         return ReserveAccount.get_reserve_account_by_profile_type_currency_and_name(api_key, profile_type, currency, name)
-
 
 @dataclass
 class CashAccount(Account):
@@ -383,6 +381,7 @@ class Transfer:
                                                 f"\nTo: <i>{recipient.name}</i>"
                                                 f"\nReason: <i>{str(e)}</i>"
                                                 f"\nReference: <i>{reference}</i>", True)
+            raise e
         except InsufficientFundsException as e:
             logger.error(str(e))
             telegram.send_message(telegram.constants.telegram_channel_username,
@@ -391,9 +390,7 @@ class Transfer:
                                                 f"\nTo: <i>{recipient.name}</i>"
                                                 f"\nReference: <i>{reference}</i>"
                                                 f"\n\nReason: <i>{str(e)}</i>", True)
-            raise InsufficientFundsException(str(e))
-
-        return None
+            raise e
 
 
 @dataclass
@@ -439,6 +436,7 @@ class IntraAccountTransfer:
                                                 f"\nFrom: <i>{to_account.currency.value}</i>"
                                                 f"\nTo: <i>{to_account.name if isinstance(to_account, ReserveAccount) else None} ({to_account.currency.value})</i>"
                                                 f"\nReason: <i>{str(e)}</i>", True)
+            raise e
         except InsufficientFundsException as e:
             logger.error(str(e))
             telegram.send_message(telegram.constants.telegram_channel_username,
@@ -447,8 +445,7 @@ class IntraAccountTransfer:
                                                 f"\nFrom: <i>{to_account.currency.value}</i>"
                                                 f"\nTo: <i>{to_account.name if isinstance(to_account, ReserveAccount) else to_account.currency.value} ({to_account.currency.value})</i>"
                                                 f"\nReason: <i>{str(e)}</i>", True)
-            raise InsufficientFundsException(str(e))
-        return None
+            raise e
 
     @classmethod
     def _transfer_to_cash_account(cls, api_key: str, receiving_amount: Decimal, from_account: Union[CashAccount, ReserveAccount], to_account: CashAccount, user_profile: UserProfile) -> "IntraAccountTransfer":
