@@ -14,7 +14,7 @@ class FinanceDatabase:
 
     def __init__(self, excel_file_path: str, month: datetime = None):
         excel_data: ExcelData = ExcelData.read_excel(excel_file_path, common.get_next_month_text() if month is None else month.strftime("%B, %Y"))
-        self.settings = Settings(excel_file_path)
+        self.settings = Settings(excel_data)
         self.summary = Summary(excel_data)
         self.monthly_expenses_report = MonthlyExpenseReport(excel_data)
         self.fixed_expenses = FixedExpenses(excel_data)

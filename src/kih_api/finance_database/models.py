@@ -187,8 +187,7 @@ class FixedExpenses:
 class Settings:
     settings: Dict[str, Any]
 
-    def __init__(self, excel_file_path: str):
-        excel_data: ExcelData = ExcelData.read_excel(excel_file_path, "Settings")
+    def __init__(self, excel_data: ExcelData):
         self.settings = excel_data.get_data_set("Settings")
 
     def get(self, key: str) -> Any:
