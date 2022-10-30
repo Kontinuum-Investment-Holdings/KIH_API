@@ -381,7 +381,6 @@ class Transfer:
                                                 f"\nTo: <i>{recipient.name}</i>"
                                                 f"\nReason: <i>{str(e)}</i>"
                                                 f"\nReference: <i>{reference}</i>", True)
-            raise e
         except InsufficientFundsException as e:
             logger.error(str(e))
             telegram.send_message(telegram.constants.telegram_channel_username,
@@ -390,7 +389,6 @@ class Transfer:
                                                 f"\nTo: <i>{recipient.name}</i>"
                                                 f"\nReference: <i>{reference}</i>"
                                                 f"\n\nReason: <i>{str(e)}</i>", True)
-            raise e
 
 
 @dataclass
