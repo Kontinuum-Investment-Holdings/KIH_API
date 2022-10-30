@@ -518,7 +518,7 @@ class Transaction:
     entity: Optional[str | Account]
     profile_type: ProfileType
 
-    def __init__(self, wise_transaction: wise_models.Transaction, profile_type: ProfileType):
+    def __init__(self, api_key: str, wise_transaction: wise_models.Transaction, profile_type: ProfileType):
         self.profile_type = profile_type
         self.transaction_type = global_common.get_enum_from_value(wise_transaction.referenceNumber.split("-")[0] , TransactionType)
         self.timestamp = pytz.utc.localize(datetime.fromisoformat(wise_transaction.date.split(".")[0]))
@@ -528,9 +528,9 @@ class Transaction:
         self.transaction_amount = self.total_amount - self.fees if self.total_amount > Decimal("0") else self.total_amount + self.fees
         self.running_balance = Decimal(str(wise_transaction.runningBalance.value))
         self.reference = wise_transaction.details.paymentReference
-        self.get_entity(wise_transaction)
+        self.get_entity(api_key, wise_transaction)
 
-    def get_entity(self, wise_transaction: wise_models.Transaction) -> None:
+    def get_entity(self, api_key: str, wise_transaction: wise_models.Transaction) -> None:
         if self.transaction_type == TransactionType.Transfer:
             self.entity = wise_transaction.details.description.replace("Received money from ", "").replace(" with reference ", "").replace("Sent money to ","")
         elif self.transaction_type == TransactionType.Card:
@@ -538,7 +538,7 @@ class Transaction:
         elif self.transaction_type == TransactionType.Balance:
             reserve_account_name: str = wise_transaction.details.description.split(" to ")[1] if "to" in wise_transaction.details.description else wise_transaction.details.description.split(" from ")[1]
             try:
-                self.entity = list(filter(lambda reserve_account: reserve_account.name == reserve_account_name, ReserveAccount.get_by_cached_profile_type_and_currency(self.profile_type, self.currency)))[0]
+                self.entity = list(filter(lambda reserve_account: reserve_account.name == reserve_account_name, ReserveAccount.get_by_cached_profile_type_and_currency(api_key, self.profile_type, self.currency)))[0]
             except IndexError:
                 self.entity = None
 
@@ -550,6 +550,6 @@ class Transaction:
         transaction_list: List[Transaction] = []
 
         for transaction in wise_account_statement.transactions:
-            transaction_list.append(Transaction(transaction, account.user_profile.type))
+            transaction_list.append(Transaction(api_key, transaction, account.user_profile.type))
 
         return transaction_list
