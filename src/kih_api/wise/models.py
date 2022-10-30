@@ -65,7 +65,7 @@ class WiseAccount:
         return typing.cast(CashAccount, list(filter(lambda account: account.currency == currency and isinstance(account, CashAccount), self.account_list))[0])
 
     def get_reserve_account(self, currency: global_common.Currency, reserve_account_name: str, create_if_unavailable: bool = False) -> ReserveAccount:
-        reserve_account_list: List[ReserveAccount] = list(filter(lambda account: account.currency == currency and isinstance(account, ReserveAccount) and account.name == reserve_account_name, self.account_list))
+        reserve_account_list: List[ReserveAccount] = list(filter(lambda account: account.currency == currency and isinstance(account, ReserveAccount) and account.name == reserve_account_name, self.account_list)) # type: ignore[arg-type]
 
         if len(reserve_account_list) == 0:
             if create_if_unavailable:
@@ -396,6 +396,7 @@ class Transfer:
                                                 f"\nTo: <i>{recipient.name}</i>"
                                                 f"\nReference: <i>{reference}</i>"
                                                 f"\n\nReason: <i>{str(e)}</i>", True)
+        return None
 
 
 @dataclass
