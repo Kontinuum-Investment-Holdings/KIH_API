@@ -65,12 +65,15 @@ class WiseAccount:
         return typing.cast(CashAccount, list(filter(lambda account: account.currency == currency and isinstance(account, CashAccount), self.account_list))[0])
 
     def get_reserve_account(self, currency: global_common.Currency, reserve_account_name: str, create_if_unavailable: bool = False) -> ReserveAccount:
-        reserve_account: ReserveAccount = typing.cast(ReserveAccount, list(filter(lambda account: account.currency == currency and isinstance(account, ReserveAccount) and account.name == reserve_account_name,self.account_list))[0])
+        reserve_account_list: List[ReserveAccount] = list(filter(lambda account: account.currency == currency and isinstance(account, ReserveAccount) and account.name == reserve_account_name, self.account_list))
 
-        if reserve_account is None:
-            return ReserveAccount.create_reserve_account(self.api_key, reserve_account_name, currency, self.profile_type)
-
-        return reserve_account
+        if len(reserve_account_list) == 0:
+            if create_if_unavailable:
+                return ReserveAccount.create_reserve_account(self.api_key, reserve_account_name, currency, self.profile_type)
+            else:
+                raise ReserveAccountNotFoundException()
+        else:
+            return reserve_account_list[0]
 
     def get_exchange_rate(self, from_currency: global_common.Currency, to_currency: global_common.Currency) -> ExchangeRate:
         return ExchangeRate.get(self.api_key, from_currency, to_currency)
@@ -139,9 +142,13 @@ class Account(ABC):
         self.account_type = global_common.get_enum_from_value(wise_account.type, AccountType)
         self.user_profile = user_profile
 
-    def transfer(self, recipient: Recipient, receiving_amount: Decimal, reference: str = "", to_currency: Optional[global_common.Currency] = None) -> Transfer:
-        to_currency = self.currency if to_currency is None else to_currency
-        transfer: Transfer = Transfer.execute(self.api_key, receiving_amount, recipient, self.currency, to_currency, reference, self.user_profile.type)
+    def transfer(self, recipient: Recipient, receiving_amount: Decimal, reference: str = "", receiving_amount_currency: Optional[global_common.Currency] = None) -> Transfer:
+        receiving_amount_currency = recipient.currency if receiving_amount_currency is None else receiving_amount_currency
+        if receiving_amount_currency != recipient.currency:
+            exchange_rate: ExchangeRate = ExchangeRate.get(self.api_key, receiving_amount_currency, recipient.currency)
+            receiving_amount = receiving_amount * exchange_rate.exchange_rate
+
+        transfer: Transfer = Transfer.execute(self.api_key, receiving_amount, recipient, self.currency, recipient.currency, reference, self.user_profile.type)
 
         if transfer.is_successful:
             if isinstance(self, CashAccount):
@@ -162,7 +169,7 @@ class Account(ABC):
             if isinstance(to_account, CashAccount):
                 to_account.balance = Account.get_by_profile_type_and_currency(self.api_key, self.user_profile.type, self.currency).balance
             else:
-                to_account.balance = ReserveAccount.get_reserve_account_by_profile_type_currency_and_name(self.api_key, self.user_profile.type, self.currency, self.name).balance
+                to_account.balance = ReserveAccount.get_reserve_account_by_profile_type_currency_and_name(self.api_key, self.user_profile.type, to_account.currency, to_account.name).balance
 
         return intra_account_transfer
 
