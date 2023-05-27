@@ -45,3 +45,8 @@ class InvestmentReturn(EmbeddedDocument):
             investment_returns_list.append(InvestmentReturn(profit=profit, capital=capital, date=date))
 
         return investment_returns_list
+
+    @staticmethod
+    def get_annual_rate_of_return(starting_capital: Decimal, starting_date: datetime, ending_capital: Decimal, ending_date: datetime) -> Decimal:
+        year_frac: Decimal = calculations.get_year_frac(starting_date, ending_date)
+        return (ending_capital / starting_capital) ** (Decimal("1") / year_frac) - Decimal("1")
