@@ -1,4 +1,5 @@
 import datetime
+import math
 from decimal import Decimal
 
 
@@ -6,6 +7,10 @@ def get_annual_rate_of_return(starting_value: Decimal, ending_value: Decimal, nu
     a: Decimal = ending_value ** (1 / number_of_years)
     b: Decimal = (1 / starting_value) ** (1 / number_of_years)
     return (a * b) - Decimal("1")
+
+
+def get_monthly_rate_of_return_from_annual(annual_rate_of_return: Decimal) -> Decimal:
+    return ((annual_rate_of_return + Decimal("1")) ** (Decimal("1") / Decimal("12"))) - Decimal("1")
 
 
 def get_year_frac(starting_date: datetime.datetime, ending_date: datetime.datetime) -> Decimal:
